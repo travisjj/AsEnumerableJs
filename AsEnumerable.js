@@ -5,9 +5,24 @@ Array.prototype.AsEnumerable = function(){
 var Enumerable = function (set) {
     this.Set = set;
     this.Path = [];
+    this.Paths = [];
 };
 
 (function(fn,undefined){
+    var compares = {};
+    compares["[object Number]"] = function (x, y, desc) {
+        return !desc? x - y : y - x;
+    };
+    compares["[object String]"] = function (x, y, desc) {
+        return !desc? x.localeCompare(y) : y.localeCompare(x);
+    };
+    compares["[object Date]"] = function (x, y, desc) {
+        var r = x.split('/');
+        var s = y.split('/');
+        var g = (100 * r[0]) + (r[1] | 0) + (10000 * r[2]);
+        var h = (100 * s[0]) + (s[1] | 0) + (10000 * s[2]);
+        return !desc? g - h : h - g;
+    };
     fn.Any = function(func)
     {
         if(func == undefined && this.Set.length > 0) return true;
@@ -50,7 +65,7 @@ var Enumerable = function (set) {
         return sum;
     };
     
-    fn.Where = function(func,i)
+    fn.Where = function(func)
     {
      this.Path.push(
          function(item,i){
@@ -70,16 +85,87 @@ var Enumerable = function (set) {
      return this;
     };
     
-    fn.ToArray = function(){
-     var array = [];
-     var path = this.Path;
-     for(var i = 0; i < this.Set.length; i++){ 
-      var result = (function walk(item,i){
-       if(i == path.length || item == undefined) return item;
-       return walk(path[i](item,i),i+1);
-      })(this.Set[i],0);
-      if(result != undefined)array.push(result);
+    fn.Lookup = function(func){
+     return this;
+    };
+    
+    fn.OrderBy = function(func){
+     if(this.Path.length > 0 ){
+      this.Paths.push(this.Path);
+      this.Path = [];
      }
-     return array;
+     var f = function(array){
+         array.sort(function(a,b){
+             var x = func ? func(a) : a;
+             var y = func ? func(b) : b;
+             return compares[toString.call(x)](x, y, false);
+         });
+     };
+     f.type = "order";
+     this.Paths.push([f]);
+     return this;
+    };
+    
+    fn.OrderByDescending = function(func){
+     if(this.Path.length > 0 ){
+      this.Paths.push(this.Path);
+      this.Path = [];
+     }
+     var f = function(array){
+         array.sort(function(a,b){
+             var x = func ? func(a) : a;
+             var y = func ? func(b) : b;
+             return compares[toString.call(x)](x, y, true);
+         });
+     };
+     f.type = "order";
+     this.Paths.push([f]);
+     return this;
+    };
+    
+    fn.ThenBy = function(func){
+     
+     return this;
+    };
+    
+    var c = 0;
+    fn.Take = function(count){
+     this.Path.push(
+         function(item,i){
+          if( i >= count ) throw new Error("Take Exceeded");
+          return item;
+         }
+     );
+     return this;
+    };
+    
+    fn.ToArray = function(){
+     if(this.Path.length > 0 )this.Paths.push(this.Path);
+     var array = [];
+     var set = this.Set;
+     for(var a = 0; a < this.Paths.length; a++)
+     {
+         var path = this.Paths[a];
+         if(path[0].type == "order"){
+          for(var i = 0; i < path.length; i++){ 
+           path[i](set);  
+          }
+         }else{
+             for(var i = 0; i < set.length; i++){ 
+              try{
+                  var result = (function walk(item,n){
+                   if(n == path.length || item == undefined) return item;
+                   return walk(path[n](item,i),n+1);
+                  })(set[i],0);
+                  if(result != undefined)array.push(result);
+              }catch(e){
+                  break;
+              }
+             }
+             set = array;
+             array = [];
+         }
+     }
+     return set;
     };
 })(Enumerable.prototype)
