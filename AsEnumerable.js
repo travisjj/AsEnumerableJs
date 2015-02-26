@@ -153,7 +153,10 @@ var Enumerable = function (set) {
          }else{
              for(var i = 0; i < set.length; i++){ 
                  var result = (function walk(item,n){
-                     if(n == path.length || item == undefined) return item;
+                     if(n == path.length 
+                        || item == undefined
+                        || item == Break
+                       ) return item;
                      return walk(path[n](item,i),n+1);
                  })(set[i],0);
                  if(result == Break)break;
