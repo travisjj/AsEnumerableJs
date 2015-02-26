@@ -1,6 +1,6 @@
-Array.prototype.AsEnumerable = function(){
+Object.defineProperty(Array.prototype, 'AsEnumerable', { value: function(){
   return new Enumerable(this);
-};
+}});
 
 var Enumerable = function (set) {
     this.Set = set;
