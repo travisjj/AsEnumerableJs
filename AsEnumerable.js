@@ -9,6 +9,7 @@ var Enumerable = function (set) {
 };
 
 (function(fn,undefined){
+    function Break(){}
     var compares = {};
     compares["[object Number]"] = function (x, y, desc) {
         return !desc? x - y : y - x;
@@ -128,11 +129,10 @@ var Enumerable = function (set) {
      return this;
     };
     
-    var c = 0;
     fn.Take = function(count){
      this.Path.push(
          function(item,i){
-          if( i >= count ) throw new Error("Take Exceeded");
+          if( i >= count ) return Break;
           return item;
          }
      );
@@ -152,15 +152,12 @@ var Enumerable = function (set) {
           }
          }else{
              for(var i = 0; i < set.length; i++){ 
-              try{
-                  var result = (function walk(item,n){
-                   if(n == path.length || item == undefined) return item;
-                   return walk(path[n](item,i),n+1);
-                  })(set[i],0);
-                  if(result != undefined)array.push(result);
-              }catch(e){
-                  break;
-              }
+                 var result = (function walk(item,n){
+                     if(n == path.length || item == undefined) return item;
+                     return walk(path[n](item,i),n+1);
+                 })(set[i],0);
+                 if(result == Break)break;
+                 if(result != undefined)array.push(result);
              }
              set = array;
              array = [];
