@@ -90,16 +90,19 @@ var Enumerable = function (set) {
      return this;
     };
     
+    function same(x){ return x; }
     fn.OrderBy = function(func){
      if(this.Path.length > 0 ){
       this.Paths.push(this.Path);
       this.Path = [];
      }
+     func = func ? func : same;
      var f = function(array){
+         var type = toString.call(array[0]);
          array.sort(function(a,b){
-             var x = func ? func(a) : a;
-             var y = func ? func(b) : b;
-             return compares[toString.call(x)](x, y, false);
+             var x = func(a);
+             var y = func(b);
+             return compares[type](x, y, false);
          });
      };
      f.type = "order";
@@ -112,11 +115,13 @@ var Enumerable = function (set) {
       this.Paths.push(this.Path);
       this.Path = [];
      }
+     func = func ? func : same;
      var f = function(array){
+         var type = toString.call(array[0]);
          array.sort(function(a,b){
-             var x = func ? func(a) : a;
-             var y = func ? func(b) : b;
-             return compares[toString.call(x)](x, y, true);
+             var x = func(a);
+             var y = func(b);
+             return compares[type](x, y, true);
          });
      };
      f.type = "order";
